@@ -3,7 +3,6 @@ Repository for brightway-based characterization and analysis of ecoinvent databa
 
 
 # Setup
-
 ## Environment
 * First, make sure you have conda installed and running. 
 * Next, enter `conda env create -f environment.yml -n SEE_BW` in your terminal to make a a `SEE_BW` virtual environment with all the depencies.
@@ -21,3 +20,6 @@ Repository for brightway-based characterization and analysis of ecoinvent databa
     }
     ```
 * The secrets folder is included in the `.gitignore` file, so the info stays on your local machine.
+
+## Steps
+* First, run the 01_setup.ipynb notebook to build the SEE_LAB Brightway Project and load it with the ecoinvent database. For some reason this only seems to work in a jupyter notebook and not in a .py script. 
