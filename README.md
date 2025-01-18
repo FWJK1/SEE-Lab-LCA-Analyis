@@ -7,7 +7,7 @@ Repository for brightway-based characterization and analysis of ecoinvent databa
 ## Environment
 * First, make sure you have conda installed and running. 
 * Next, enter `conda env create -f environment.yml -n SEE_BW` in your terminal to make a a `SEE_BW` virtual environment with all the depencies.
-* If you don't already have jupyter installed in your global environment, use do that. Once you have it installed, use `python -m ipykernel install --user --name=SEE_BW --display-name "Python (SEE_BW)"` to set up the virtual environment you built from the yml so you can use the environment in your files.
+* If you don't already have jupyter installed in your global environment, do that. Once you have it installed, use `python -m ipykernel install --user --name=SEE_BW --display-name "Python (SEE_BW)"` to set up the virtual environment you built from the yml so you can use the environment in your files.
 * For .py scripts, first enter `conda activate SEE_BW` to make sure you're in the right environment.
 * For .ipynb notebooks, make sure that you select the `SEE_BW` ipykernel to run the code successfully.
 
