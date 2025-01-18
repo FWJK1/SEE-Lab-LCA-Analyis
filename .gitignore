@@ -1,0 +1,10 @@
+# Ignore secret files
+secrets/
+
+# Ignore virtual environment
+venv/
+
+# Ignore Python bytecode
+__pycache__/
+*.pyc
+*.pyo
