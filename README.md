@@ -14,8 +14,10 @@ Repository for brightway-based characterization and analysis of ecoinvent databa
 ## Security
 * This project requires that you have an en ecoinvent license including the ability to download datasets. If you don't have this, sorry.
 * In your local copy of this project, create a folder `/secrets`. Within this folder, create a file `passwords.json`. Fill out the file in this manner: 
-    ```{
+    ```
+    {
         "ecoinvent_username" : "your_username",
         "ecoinvent_password" : "your_password"
-    }```
+    }
+    ```
 * The secrets folder is included in the `.gitignore` file, so the info stays on your local machine.
