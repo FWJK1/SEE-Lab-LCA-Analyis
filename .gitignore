@@ -1,8 +1,12 @@
 # Ignore secret files
 secrets/
+*passwords.json
 
-# Ignore virtual environment
-venv/
+# Ignore scripts for maintaining environment and stable build
+Useful_scripts/
+
+# Ignore local code
+Local_Code/
 
 # Ignore Python bytecode
 __pycache__/
