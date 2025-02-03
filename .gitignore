@@ -5,8 +5,10 @@ secrets/
 # Ignore scripts for maintaining environment and stable build
 Useful_scripts/
 
-# Ignore local code
+# Ignore local code and figures
 Local_Code/
+Figures/
+
 
 # Ignore Python bytecode
 __pycache__/
