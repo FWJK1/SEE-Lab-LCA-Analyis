@@ -22,9 +22,9 @@ Repository for brightway-based characterization and analysis of ecoinvent databa
 * The secrets folder is included in the `.gitignore` file, so the info stays on your local machine.
 
 ## Steps
-* First, run the` Code/01_setup.ipynb` notebook to build the SEE_LAB Brightway Project and load it with the 3.9.1 and 3.11 ecoinvent cutoff databases. For some reason this seems to work better in a .ipynb jupyter notebook then in a .py script. 
+* First, run the `Code/01_setup.ipynb` notebook to build the SEE_LAB Brightway Project and load it with the 3.9.1 and 3.11 ecoinvent cutoff databases. For some reason this seems to work better in a .ipynb jupyter notebook then in a .py script. 
 * Second, make sure all your data is up to date. While I will attempt to host publically available and small indexing datasets in the repository, it's often better to build stuff if you can. See [Data Sources](#data-sources). 
-* Next, go through the notebooks in `Exploratory_notebooks`  in order, using the `SEE_BW` ipykernel you created in the [Environment](#environment) steps. While no later code relies upon these notebooks, they are hopeful for better understanding the proect.
+* Next, go through the notebooks in `Exploratory_notebooks`  in order. Use the `SEE_BW` ipykernel you created in the [Environment](#environment) steps. While no later code relies upon these notebooks, they are helpful for understanding the proect.
 
 # Data Sources
 * [ecoQuery ecoinvent Database](https://ecoquery.ecoinvent.org/) for primary database
