@@ -1,6 +1,7 @@
 # Ignore secret files
 secrets/
 *passwords.json
+Data/saved_networks
 
 # Ignore scripts for maintaining environment and stable build
 Useful_scripts/
@@ -8,7 +9,6 @@ Useful_scripts/
 # Ignore local code and figures
 Local_Code/
 Figures/
-
 
 # Ignore Python bytecode
 __pycache__/
