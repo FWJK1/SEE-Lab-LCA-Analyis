@@ -3,7 +3,6 @@ import streamlit as st
 from interactive_graph import Interactive_Graph
 from interactive_graph import log_time
 
-
 ## we build and store the graph
 @st.cache_resource
 def get_graph():
@@ -13,8 +12,9 @@ def get_graph():
 @st.cache_resource
 def run_graph(_ig):
     _ig.run_lca()
-    nodes, edges  = _ig.create_graph_from_lca()
-    nodes, geo_nodes, geo_edges = _ig.run(nodes=nodes, edges=edges, levels=0)
+    nodes, edges  = _ig.get_nodes_edges_list_from_lca()
+    geo_nodes, geo_edges = _ig.subframes_from_nodelist(nodes=nodes, edges=edges, levels=0)
+
     print(len(nodes))
     return nodes, geo_nodes, geo_edges
     
@@ -181,7 +181,7 @@ def plot_graph(geo_traces, node_traces, edge_trace):
     st.plotly_chart(fig, use_container_width=True)
 
 ig = get_graph()
-st.title(f"Graph Visualization {ig.foreground_name.split("Backend:")[1]}")
+st.title(f"Graph Visualization {ig.foreground_name}")
 nodes, geo_nodes, geo_edges = run_graph(ig)
 geo_traces, activity_traces, edge_trace = precompute_traces(ig, geo_nodes, geo_edges)
 plot_graph(geo_traces, activity_traces, edge_trace)
