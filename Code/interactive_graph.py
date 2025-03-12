@@ -114,28 +114,21 @@ class Interactive_Graph:
         with open(path, "wb") as f:
             pickle.dump(self.G, f)
 
-    import geopandas as gpd
 
     @log_time
     def save_frames(self, path):
-        self.nodes_df.to_csv(path + "_nodes_dataframe.csv", index=False)
-        self.edges_df.to_csv(path + "_edges_dataframe.csv", index=False)
+        # Save the nodes as a GeoPackage to preserve geometry
+        self.nodes_df.to_file(path + "_nodes.gpkg", layer='nodes', driver="GPKG")
+
+        # Save the edges as a CSV since it's not a GeoDataFrame
+        self.edges_df.to_csv(path + "_edges.csv", index=False)
+
+
 
     @log_time
     def load_frames(self, path):
-        # Load the nodes and edges DataFrames from CSV
-        self.nodes_df = pd.read_csv(path + "_nodes_dataframe.csv", low_memory=False)
-        self.edges_df = pd.read_csv(path + "_edges_dataframe.csv", low_memory=False)
-
-        # Clean up the columns (remove 'Unnamed' columns that may have been added)
-        self.nodes_df = self.nodes_df.loc[:, ~self.nodes_df.columns.str.contains('^Unnamed')]
-        self.edges_df = self.edges_df.loc[:, ~self.edges_df.columns.str.contains('^Unnamed')]
-
-        # Convert the 'geometry' column back into Shapely geometries if it exists and make gpd
-        if 'geometry' in self.nodes_df.columns:
-            self.nodes_df['geometry'] = gpd.GeoSeries.from_wkt(self.nodes_df['geometry'])
-        self.nodes_df = gpd.GeoDataFrame(self.nodes_df, geometry='geometry')
-        self.nodes_df.set_crs("EPSG: 4327", allow_override=True)
+        self.nodes_df = gpd.read_file(path + "_nodes.gpkg", layer='nodes')
+        self.edges_df = pd.read_csv(path + "_edges.csv")
 
 
 ###---build the frames and geolocate them---###
@@ -159,10 +152,56 @@ class Interactive_Graph:
             {'source_node': u, 'target_node': v, **d} for u, v, d in self.G.edges(data=True)
         ])
 
-        df_nodes = self.geolocate_nodes(df_nodes)
         self.nodes_df = df_nodes
         self.edges_df = df_edges
 
+    
+    ### building subgraphs ### 
+    @log_time
+    def build_subgraph_from_nodelist(self, nodes, levels=1, edges=[]):
+        ## note that this isn't really optimized at present (just uses a big set)
+        ## and will probably have to be improved at some point if we want lots of levels.
+        visited = set(nodes)
+        visited_edges = set(edges)
+        parents = visited
+        count = 0
+        while count < levels:
+            next_parents = set()
+            for parent in parents:
+                incoming_nodes = set(self.G.predecessors(parent))
+                outgoing_nodes = set(self.G.successors(parent))
+                outgoing_nodes = {node for node in outgoing_nodes if node in visited}
+                neighbors = incoming_nodes.union(outgoing_nodes)
+                for node in neighbors:
+                    visited_edges.add((node, parent))
+                next_parents.update(neighbors)
+            visited.update(next_parents)
+            parents = next_parents
+            count +=1
+        
+        subgraph=self.G.subgraph(visited).copy()
+        subgraph.add_edges_from(visited_edges)
+        return subgraph
+
+    def frames_from_subgraph(self, subgraph):
+        node_frame = self.nodes_df[self.nodes_df['node'].isin(subgraph.nodes())].copy()
+        source_nodes = [u for u, v in subgraph.edges() if u != v]
+        target_nodes = [v for u, v in subgraph.edges() if u != v]
+        edge_frame = self.edges_df[self.edges_df['source_node'].isin(source_nodes) & self.edges_df['target_node'].isin(target_nodes)].copy()
+        return node_frame, edge_frame
+    
+    def get_random_node(self, graph=None):
+        if graph is None:
+            graph = self.G
+        node = random.choice(list(graph.nodes))
+        sphere = graph.nodes[node]['sphere']
+        if sphere == 'biosphere':
+            return self.get_random_node(graph=graph)
+        else:
+            return node
+
+
+    ### Geolocate Nodes ### 
     def setup_background_geo(self):
         country_gdf = gpd.read_file(f"{root}/Data/Shapefiles/Natural_earth_countries_all/ne_10m_admin_0_countries.shp")
         fixes = {
@@ -208,11 +247,14 @@ class Interactive_Graph:
         ##  create random points within the geographies
         geo_nodes = gpd.GeoDataFrame(geo_nodes, geometry='geometry', crs="EPSG:4327")
         geo_nodes['random_point'] = geo_nodes.apply(self.generate_random_point, axis=1)
+
+        # Drop the old geometry column and assign 'random_point' as the new geometry
+        geo_nodes = geo_nodes.drop(columns=['geometry'])
         geo_nodes = gpd.GeoDataFrame(geo_nodes, geometry='random_point')
+
         return geo_nodes
    
     def generate_random_point(self, row):
-        
         if pd.isna(row['location']):
             return self.non_geo_point(self, row)
            
@@ -305,51 +347,6 @@ class Interactive_Graph:
         print(edges.columns)
         return edges
 
-
-
-    ### building subgraphs ### 
-    @log_time
-    def build_subgraph_from_nodelist(self, nodes, levels=1, edges=[]):
-        ## note that this isn't really optimized at present (just uses a big set)
-        ## and will probably have to be improved at some point if we want lots of levels.
-        visited = set(nodes)
-        visited_edges = set(edges)
-        parents = visited
-        count = 0
-        while count < levels:
-            next_parents = set()
-            for parent in parents:
-                incoming_nodes = list(self.G.predecessors(parent))
-                outgoing_nodes = list(self.G.successors(parent))
-                outgoing_nodes = [node for node in outgoing_nodes if node in visited]
-                neighbors = set(incoming_nodes).union(outgoing_nodes)
-                for node in neighbors:
-                    visited_edges.add((node, parent))
-                next_parents.update(neighbors)
-            visited.update(next_parents)
-            parents = next_parents
-            count +=1
-        
-        subgraph=self.G.subgraph(visited).copy()
-        subgraph.add_edges_from(visited_edges)
-        return subgraph
-
-    def frames_from_subgraph(self, subgraph):
-        node_frame = self.nodes_df[self.nodes_df['node'].isin(subgraph.nodes())].copy()
-        source_nodes = [u for u, v in subgraph.edges() if u != v]
-        target_nodes = [v for u, v in subgraph.edges() if u != v]
-        edge_frame = self.edges_df[self.edges_df['source_node'].isin(source_nodes) & self.edges_df['target_node'].isin(target_nodes)].copy()
-        return node_frame, edge_frame
-    
-    def get_random_node(self, graph=None):
-        if graph is None:
-            graph = self.G
-        node = random.choice(list(graph.nodes))
-        sphere = graph.nodes[node]['sphere']
-        if sphere == 'biosphere':
-            return self.get_random_node(graph=graph)
-        else:
-            return node
 
 
 
@@ -560,71 +557,3 @@ if __name__ == "__main__":
     IG.run_lca()
     nodes, edges = IG.get_nodes_edges_list_from_lca()
     geo_nodes, geo_edges =IG.run(nodes=nodes, edges=edges, show_subgraph=True, levels=0)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    # def build_node_geoframe(self, nodes=None):
-    #     if nodes is None:
-    #         nodes = self.nodes_df
-
-    #     ## add geotags to the node frame
-    #     eco_geographies_df = pd.read_excel(f"{root}/Data/Database-Overview-for-ecoinvent-v3.10_29.04.24.xlsx", sheet_name="Geographies")
-    #     geo_nodes = pd.merge(
-    #         left=nodes,
-    #         right=eco_geographies_df,
-    #         how='left', ## at some point we have to make this more sophisticated (eg, better location detail)
-    #         left_on='location',
-    #         right_on='Shortname'
-    #     )
-
-    #     geo_nodes['is_geolocated'] == ~geo_nodes['Shortname'].isna()
-    #     geo_nodes.loc[~geo_nodes['is_geolocated'], 'location'] = 'Non-Geolocated'
-    #     geo_nodes.loc[geo_nodes['Shortname'].isna(), 'location'] = 'AQ'
-
-    #     ## helper func
-    #     def get_basename(text):
-    #         text = str(text)
-    #         if len(text) == 2:
-    #             return text
-    #         match = re.search(r"..-", text) 
-    #         return match.group(0)[:2] if match else None
-        
-    #     geo_nodes.drop(columns='Shortname', inplace=True)
-    #     geo_nodes['base_name'] = geo_nodes['location'].apply(get_basename)
-
-    #     ## add shapefile info to the node frame
-    #     geo_nodes = pd.merge(
-    #         left = geo_nodes,
-    #         right=self.country_reference_gdf,
-    #         how='inner', ## at some point we have to make this outer and make it more sophisticated 
-    #         left_on='base_name',
-    #         right_on='ISO_A2'
-    #     )
-
-    #     geolocated_df = geo_nodes[geo_nodes['is_geolocated']]
-    #     geolocated_gdf = gpd.GeoDataFrame(geolocated_df, geometry='geometry', crs="EPSG:4327")
-    #     non_geolocated_df = geo_nodes[~geo_nodes['is_geolocated']].copy()
-
-            
-    #     # print(geo_nodes)
-
-    #     ## add random points to the geo_frame
-    #     geo_nodes = gpd.GeoDataFrame(geo_nodes, geometry='geometry', crs="EPSG:4327")
-
-    #     geo_nodes['random_point'] = geo_nodes.geometry.apply(self.generate_random_point)
-    #     geo_nodes = gpd.GeoDataFrame(geo_nodes, geometry='random_point')
-    #     if nodes is self.nodes_df:
-    #         self.nodes_geo_df = geo_nodes.copy()
-    #     else:
-    #         return geo_nodes
