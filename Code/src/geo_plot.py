@@ -1,34 +1,32 @@
 import plotly.graph_objects as go
+import pandas as pd
+from node_filter import NodeFilter
 
-
-## change this and change piped in logic to shift to the edges as a list of traces, too.
-## we want to be able to filter edges to whats not there    
 class GeoPlotter:
     def __init__(self, geol, node_df, edge_df):
-        """Default constructor: Compute all traces."""
+        """
+        Initializes the GeoPlotter class with geographic and node-edge data.
+
+        Args:
+            geol (object): An object containing the geographic data (e.g., shapefile) for plotting.
+            node_df (pandas.DataFrame): DataFrame containing nodes' information (e.g., coordinates, attributes).
+            edge_df (pandas.DataFrame): DataFrame containing edges' information (e.g., source, target nodes, geometry).
+        """
         self.geo_traces = self.compute_geo_traces(geol)
-        self.node_traces = self.compute_node_traces(node_df)
-        self.edge_traces = self.compute_edge_traces(edge_df)
+        self.NodeFilter = NodeFilter(node_df, edge_df)
 
-    @classmethod
-    def precompute_load(cls, geo_traces, node_traces, edge_traces):
-        """Alternative constructor: Initialize with precomputed traces."""
-        instance = cls.__new__(cls)  
-        instance.geo_traces = geo_traces
-        instance.node_traces = node_traces
-        instance.edge_traces = edge_traces
-        return instance
-
-
-    ## precomputing methods ## 
     def compute_geo_traces(self, geol):
         """
-        Compute the static geographic boundaries.
-        Requires a GeoLocator object as the geol var to get the shapefile.
+        Precomputes the static geographic boundaries from a shapefile and returns them as Plotly traces.
+
+        Args:
+            geol (object): An object containing the geographic data (e.g., shapefile).
+
+        Returns:
+            list: A list of Plotly `Scattergl` traces representing the geographic boundaries.
         """
         geo_traces = []
         x_all, y_all = [], []
-
         for geometry in geol.country_shapefile_frame.geometry:
             if geometry.geom_type == 'Polygon':
                 x, y = geometry.exterior.xy
@@ -49,93 +47,25 @@ class GeoPlotter:
                 showlegend=False
             ))
         return geo_traces
-    
-    def compute_node_traces(self, nodes_df):
-        node_traces = {}
-        activity_types = nodes_df['activity_type'].unique()
-        for activity in activity_types:
-            filtered_df = nodes_df[nodes_df['activity_type'] == activity]
-            node_traces[activity] = go.Scatter(
-                x=filtered_df.geometry.x,
-                y=filtered_df.geometry.y,
-                mode='markers',
-                marker=dict(size=10, opacity=0.9),
-                name=activity,
-                text=filtered_df['location'] + ' : ' + filtered_df['name'],
-                hoverinfo='text',
-                customdata=filtered_df['node']
-            )
-        return node_traces
-    
-    def compute_edge_traces(self, edges_df):
+
+    def create_figure(self, filter_config={}, show_edges=True):
         """
-        Calculate all the edge traces, to be filtered later
+        Builds and returns a Plotly figure, including geographic boundaries, filtered nodes, and edges.
+
+        Args:
+            filter_config (dict, optional): A dictionary of filters to apply to the node DataFrame (default is an empty dictionary).
+            show_edges (bool, optional): Whether to display edges between nodes (default is True).
+
+        Returns:
+            plotly.graph_objects.Figure: A Plotly figure containing the plotted geographic boundaries, nodes, and edges.
         """
-        edge_traces = {}
-
-        for _, edge in edges_df.iterrows():
-            line = edge.geometry
-            edge_x = [point[0] for point in line.coords] + [None]
-            edge_y = [point[1] for point in line.coords] + [None]
-
-            edge_trace = go.Scatter(
-                x=edge_x,
-                y=edge_y,
-                mode='lines',
-                line=dict(color='lightblue', width=.3),
-                opacity=.7,
-                name=f"{edge['source_node']} -> {edge['target_node']}",  # Using source and target node IDs as the name
-                showlegend=False 
-            )
-            id = (edge['source_node'], edge['target_node'])
-            edge_traces[id] = edge_trace
-        return edge_traces
-    
-        ## maybe consider, for code simplicity, using INVISIBLE activites and filtering OUT those.
-    def filter_nodes(self, visible_activities):
-        active_nodes = set()
-        traces = []
-        def update_nodes_and_traces(trace):
-            traces.append(trace)
-            active_nodes.update(trace.customdata)
-
-        if visible_activities is not None:
-            for activity in visible_activities:
-                trace = self.node_traces[activity]
-                update_nodes_and_traces(trace)
-        else:
-            for trace in self.node_traces.values():
-                update_nodes_and_traces(trace)
-        return active_nodes, traces
-
-    def filter_edges(self, active_nodes):
-        return [
-            trace for (source_node, target_node), trace in
-            self.edge_traces.items() 
-            if source_node in active_nodes and target_node in active_nodes
-            ]
-
-
-    def create_figure(self, visible_activities=None, show_edges=True):
-        """Builds and returns a Plotly figure based on selected data."""
         fig = go.Figure()
-
-        # Add country boundaries
         for trace in self.geo_traces:
             fig.add_trace(trace)
+        node_traces, active_nodes = self.NodeFilter.compute_node_trace(filter_config)
+        for trace in node_traces:
+            fig.add_trace(trace)
 
-        # filter and add node traces
-        active_nodes, node_traces = self.filter_nodes(visible_activities)
-        fig.add_traces(node_traces)
-
-        # filter and add edge_traces
         if show_edges:
-            fig.add_traces(self.filter_edges(active_nodes))
-
-        # fig.update_layout(
-        #     showlegend=True,
-        #     height=650,
-        #     margin=dict(l=0, r=0, t=40, b=0),
-        # )
-
+            fig.add_trace(self.NodeFilter.compute_edge_trace(active_nodes))
         return fig

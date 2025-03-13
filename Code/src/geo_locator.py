@@ -63,8 +63,8 @@ class GeoLocator:
 
         ## match nodes to the ecoinvent geography codes and trim
         geo_nodes = pd.merge(left=nodes_df, right=self.eco_geographies_df, how='left', left_on='location', right_index=True)
-
         geo_nodes['is_geolocated'] = ~geo_nodes.index.isna()
+        geo_nodes.loc[geo_nodes['location'] =='GLO', 'location'] = pd.NA
         geo_nodes.loc[~geo_nodes['is_geolocated'], 'location'] = pd.NA
         geo_nodes['base_name'] = geo_nodes['location'].apply(lambda text: text[:2] if pd.notna(text) else pd.NA)
 
@@ -79,7 +79,7 @@ class GeoLocator:
 
         ##  create random points within the geographies, starting with ones that have geometry first
         geo_nodes = gpd.GeoDataFrame(geo_nodes, geometry='geometry', crs=self.projection)
-        geo_nodes['is_geolocated'] = ~geo_nodes['geometry'].isna() ## for more accurate filtering later
+        geo_nodes['is_geolocated'] = geo_nodes['geometry'].notna()  ## for more accurate filtering later
         geo_nodes.loc[geo_nodes['is_geolocated'], 'random_point'] = geo_nodes.loc[geo_nodes['is_geolocated']].apply(self.generate_random_point, axis=1)
         self.geo_nodes = geo_nodes ## stash for using in find_geoconnected_nodes method
         geo_nodes.loc[~geo_nodes['is_geolocated'], 'random_point'] = geo_nodes.loc[~geo_nodes['is_geolocated']].apply(self.non_geo_point, axis=1)
