@@ -28,7 +28,7 @@ def main():
     subgraph = sp.build_subgraph(nodes, edges=edges, levels=0)
     subnodes, subedges = sp.frames_from_subgraph(subgraph)
 
-    # ## Build Subgraph and create frames 
+    # ## Build Subgraph and create frames       
     # sp = SubgraphProcessor(bload)
     # subgraph = sp.build_subgraph([get_random_node(bload.G)])
     # subnodes, subedges = sp.frames_from_subgraph(subgraph)

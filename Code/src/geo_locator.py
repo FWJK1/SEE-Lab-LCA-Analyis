@@ -19,6 +19,7 @@ from brightway_loader import BrightwayLoader
 root = Path(get_git_root()) 
 
 class GeoLocator:
+    ## note at some point we might want to make the geo-variables more specific.
     def __init__(self, brightway_loader: BrightwayLoader, projection=4327):
         self.loader = brightway_loader
         self.G = self.loader.G 
@@ -31,12 +32,10 @@ class GeoLocator:
         self.subedges = subedges
         geo_nodes = self.geolocate_nodes(subnodes)
         geo_edges = self.geolocate_edges(subedges, geo_nodes)
-        print(geo_nodes, geo_edges)
         return geo_nodes, geo_edges
 
 
     def setup_background_geo(self):
-
         ## setup the actual shapefiles to map onto
         country_shapefile = root / "Data" / "Shapefiles" / "Natural_earth_countries_all" / "ne_10m_admin_0_countries.shp"
         country_gdf = gpd.read_file(country_shapefile)
@@ -53,13 +52,13 @@ class GeoLocator:
         country_gdf = country_gdf.to_crs(epsg=self.projection)
         self.country_shapefile_frame = country_gdf.copy()
 
-        ## setup the codes to run
+        ## setup the country codes to match on
         excel_file = root / "Data" / "Database-Overview-for-ecoinvent-v3.10_29.04.24.xlsx"
         self.eco_geographies_df = pd.read_excel(excel_file, sheet_name="Geographies")
         self.eco_geographies_df.set_index('Shortname', inplace=True)
 
-
     @log_time
+    ## TODO at some point, need to make the matching logic more sophisticated to match the ipynb logic
     def geolocate_nodes(self, nodes_df):
 
         ## match nodes to the ecoinvent geography codes and trim
@@ -80,9 +79,10 @@ class GeoLocator:
 
         ##  create random points within the geographies, starting with ones that have geometry first
         geo_nodes = gpd.GeoDataFrame(geo_nodes, geometry='geometry', crs=self.projection)
-        geo_nodes.loc[geo_nodes['geometry'].notna(), 'random_point'] = geo_nodes.loc[geo_nodes['geometry'].notna()].apply(self.generate_random_point, axis=1) 
-        self.geo_nodes = geo_nodes
-        geo_nodes.loc[geo_nodes['geometry'].isna(), 'random_point'] = geo_nodes.loc[geo_nodes['geometry'].isna()].apply(self.non_geo_point, axis=1)
+        geo_nodes['is_geolocated'] = ~geo_nodes['geometry'].isna() ## for more accurate filtering later
+        geo_nodes.loc[geo_nodes['is_geolocated'], 'random_point'] = geo_nodes.loc[geo_nodes['is_geolocated']].apply(self.generate_random_point, axis=1)
+        self.geo_nodes = geo_nodes ## stash for using in find_geoconnected_nodes method
+        geo_nodes.loc[~geo_nodes['is_geolocated'], 'random_point'] = geo_nodes.loc[~geo_nodes['is_geolocated']].apply(self.non_geo_point, axis=1)
 
         # Drop the old geometry column and assign 'random_point' as the new geometry
         geo_nodes = geo_nodes.drop(columns=['geometry'])
@@ -90,7 +90,7 @@ class GeoLocator:
         self.geo_nodes = geo_nodes
         return geo_nodes
    
-    @log_time
+    # @log_time
     def generate_random_point(self, row):
         minx, miny, maxx, maxy = row.geometry.bounds
         while True:
@@ -102,7 +102,8 @@ class GeoLocator:
             if row.geometry.contains(point):
                 return point
     
-    @log_time
+    # @log_time
+    ## this is the biggest time loss currently, bc of the loop to find offshore location
     def non_geo_point(self, row): ## this is the biggest time loss. 
         connected_nodes = self.get_connected_geolocated_nodes(row["node"])
         
@@ -119,8 +120,7 @@ class GeoLocator:
             shift_lat = np.random.uniform(0.5, 2.0) * (-1 if np.random.rand() > 0.5 else 1)
             return shift_lon, shift_lat
 
-        # Try a maximum of 100 iterations to find a valid offshore point
-        for _ in range(5):
+        for _ in range(100):
             shift_lon, shift_lat = generate_shift()
             new_lon = base_lon + shift_lon
             new_lat = base_lat + shift_lat
@@ -140,7 +140,7 @@ class GeoLocator:
             lat = np.random.uniform(-85, 85)
         return Point(lon, lat)
     
-    @log_time
+    # @log_time
     def get_connected_geolocated_nodes(self, node):
         """
         Returns a list of geolocated nodes that are directly connected to the given non-geolocated node.
