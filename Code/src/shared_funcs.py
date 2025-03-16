@@ -8,3 +8,4 @@ def get_random_node(graph):
         return get_random_node(graph=graph)
     else:
         return node
+ 

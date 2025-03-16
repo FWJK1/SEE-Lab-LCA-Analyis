@@ -20,12 +20,13 @@ root = Path(get_git_root())
 
 class GeoLocator:
     ## note at some point we might want to make the geo-variables more specific.
-    def __init__(self, brightway_loader: BrightwayLoader, projection=4327):
+    def __init__(self, brightway_loader: BrightwayLoader, projection=4327, geomode="offshore"):
         self.loader = brightway_loader
         self.G = self.loader.G 
         self.edges_df = self.loader.edges_df
         self.nodes_df = self.loader.nodes_df
         self.projection = projection
+        self.geomode = geomode
         self.setup_background_geo()
 
     def geolocate(self, subnodes, subedges):
@@ -64,8 +65,15 @@ class GeoLocator:
         ## match nodes to the ecoinvent geography codes and trim
         geo_nodes = pd.merge(left=nodes_df, right=self.eco_geographies_df, how='left', left_on='location', right_index=True)
         geo_nodes['is_geolocated'] = ~geo_nodes.index.isna()
-        geo_nodes.loc[geo_nodes['location'] =='GLO', 'location'] = pd.NA
-        geo_nodes.loc[~geo_nodes['is_geolocated'], 'location'] = pd.NA
+
+        if self.geomode == "antarctica":
+            geo_nodes.loc[~geo_nodes['is_geolocated'], 'location'] = "AQ"
+            geo_nodes.loc[geo_nodes['location'] =='GLO', 'location'] = "AQ"
+            geo_nodes.loc[geo_nodes['location'] =='RoW', 'location'] = "AQ"
+
+        elif self.geomode == "offshore":
+            geo_nodes.loc[geo_nodes['location'] =='GLO', 'location'] = pd.NA
+            geo_nodes.loc[~geo_nodes['is_geolocated'], 'location'] = pd.NA
         geo_nodes['base_name'] = geo_nodes['location'].apply(lambda text: text[:2] if pd.notna(text) else pd.NA)
 
         ## match the geographic codes for process to the shapefiles
