@@ -1,0 +1,15 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "lca_graph_viz"
+version = "0.1"
+description = "A tool for visualizing LCA background databases as networks."
+authors = [
+    { name = "Fitz Koch", email = "fw.j.keenan.koch@gmail.com" }
+]
+license = { text = "Apache-2.0" }
+
+[tool.setuptools]
+packages = ["lca_graph_viz"]
