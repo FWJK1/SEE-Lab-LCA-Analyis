@@ -74,9 +74,5 @@ fig = plotter.create_figure(filtered_nodes=subnodes, filtered_edges=subedges, sh
 
 if viz_version == 'GeoHeatmap':
     st.pyplot(fig)
-    # buf = io.BytesIO()
-    # fig.savefig(buf, format="png")
-    # print("fig saved")
-    # st.image(buf, use_column_width=True)
 else:
     st.plotly_chart(fig)

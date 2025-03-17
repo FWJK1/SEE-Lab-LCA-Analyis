@@ -30,7 +30,6 @@ class HeatPlotter:
         )
         df['count'] = df['count'].fillna(0)
         gdf = gpd.GeoDataFrame(df, geometry=df.geometry, crs=self.projection)
-        print(gdf)
         return gdf
     
     def plot_heatmap(self, frame, ax):
