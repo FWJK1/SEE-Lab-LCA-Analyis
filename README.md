@@ -42,7 +42,7 @@ Repository for brightway-based characterization and analysis of ecoinvent databa
     * [World Bank](https://data.worldbank.org/) for GDP Data
 
     ## Indexing Data
-    * [Cloford.com] (https://cloford.com/resources/codes/index.htm) for indexing Country codes to sub-continental regions
+    * [Cloford.com](https://cloford.com/resources/codes/index.htm) for indexing Country codes to sub-continental regions
     * [Country and Continent Codes (stevewithington GitHub) ](https://gist.github.com/stevewithington/20a69c0b6d2ff846ea5d35e5fc47f26c) for indexing Country codes to Continents
 
     ## Shapefiles
