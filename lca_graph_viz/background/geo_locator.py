@@ -127,8 +127,7 @@ class GeoLocator:
         self.offshore_gen = OffshorePointGenerator(self.country_shapefile_frame, self.geo_nodes, self.subedges)
         rows_needed = geo_nodes.loc[~geo_nodes['is_geolocated']]
         offshore_results = self.parallel_offshore(rows_needed)
-        print(f"Rows needing geolocation: {len(rows_needed)}")
-        print(f"Offshore points generated: {len(offshore_results)}")        
+
 
         geo_nodes.loc[rows_needed.index, 'random_point'] = offshore_results
         geo_nodes.drop(columns='geometry', inplace=True)

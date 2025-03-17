@@ -1,7 +1,6 @@
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 
-
 import pandas as pd
 import geopandas as gpd
 
@@ -32,11 +31,11 @@ class HeatPlotter:
         gdf = gpd.GeoDataFrame(df, geometry=df.geometry, crs=self.projection)
         return gdf
     
-    def plot_heatmap(self, frame, ax):
+    def plot_heatmap(self, gdf, ax):
         ax.axis("off")
         cm = mpl.colormaps.get_cmap("YlOrRd")
-        norm = mpl.colors.LogNorm(vmin=max(frame['count'].min(), 1), vmax=max(frame['count'].max(), 50))
-        frame.plot(column='count', norm=norm, cmap=cm, ax=ax,
+        norm = mpl.colors.Normalize(vmin=max(gdf['count'].min(), 1), vmax=max(gdf['count'].max(), 50))
+        gdf.plot(column='count', norm=norm, cmap=cm, ax=ax,
                edgecolor='black',
                 linewidth = 0.3 )
         sm = plt.cm.ScalarMappable(cmap=cm, norm=norm)
@@ -47,8 +46,8 @@ class HeatPlotter:
 
     def create_figure(self, filtered_nodes, **kwargs):
         # Merge the filtered nodes with the geo_nodes for geometries
-        frame = self.merge_nodes(filtered_nodes)
+        gdf = self.merge_nodes(filtered_nodes)
         fig, ax = plt.subplots(1, figsize=(14, 16))
-        self.plot_heatmap(frame, ax)
+        self.plot_heatmap(gdf, ax)
         plt.tight_layout() 
         return fig
