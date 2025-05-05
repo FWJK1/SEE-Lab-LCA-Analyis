@@ -48,4 +48,8 @@ class NodeFilter:
             filtered_edges = self.edge_df[
             (self.edge_df['target_node'].isin(active_nodes)) & (self.edge_df['source_node'].isin(active_nodes))
             ]
+            print(len(filtered_edges))
+            print(filtered_edges['geometry'].apply(lambda g: g.is_valid if g else None).value_counts()) ## this suggests that a lot of the edges have non valid geometries for whatever reason
+            print(filtered_edges[filtered_edges['geometry'].isnull()])
+
             return filtered_nodes, filtered_edges

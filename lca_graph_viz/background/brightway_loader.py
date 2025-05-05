@@ -2,9 +2,7 @@
 from pathlib import Path
 
 ## brightway packages
-import bw2io as bi
 import bw2data as bd
-import bw2calc as bc
 
 ## 3rd party packages 
 import networkx as nx

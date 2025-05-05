@@ -41,17 +41,17 @@ class lcaAnalyzer:
         """
         wb = bd.Database("Water bottle LCA")
         
-        # Find the method related to climate change (GWP)
+        # Find the method related to climate change (GWP) -- need to reset this at some point
         ef_gwp_key = [m for m in bd.methods if "climate change" in m[1] and "EF" in m[0]].pop()
 
         if self.verbose:
-            print(ef_gwp_key)  # Key for the method, may need validation
+            print(ef_gwp_key)  
             print({[act for act in wb][0]: 1})  # Initial functional unit
 
         # Prepare the functional unit and data objects for the LCA
         my_functional_unit, data_objs, _ = bd.prepare_lca_inputs(
             {[act for act in wb][0]: 1},  # Using the first activity as the functional unit
-            method=ef_gwp_key,  # Using the chosen method
+            method=ef_gwp_key,  # Using the chosen method 
         )
         
         # Create the LCA object and run the calculations

@@ -1,6 +1,5 @@
 import numpy as np
 import pandas as pd
-from concurrent.futures import ProcessPoolExecutor
 from shapely.geometry import Point
 
 class OffshorePointGenerator:

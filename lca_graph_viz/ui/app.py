@@ -35,6 +35,7 @@ max_out_degree = st.session_state.max_out_degree
 
 
 # --- Streamlit UI --- # 
+st.set_page_config(layout="wide")
 st.title(f"Graph Visualization for {st.session_state.title}")
 
 
@@ -75,4 +76,9 @@ fig = plotter.create_figure(filtered_nodes=subnodes, filtered_edges=subedges, sh
 if viz_version == 'GeoHeatmap':
     st.pyplot(fig)
 else:
+    fig.update_layout(
+    # autosize=True,  
+    margin=dict(l=10, r=10, t=10, b=10), 
+    height= 1000,
+)
     st.plotly_chart(fig)

@@ -38,6 +38,7 @@ class NxPlotter:
 
     def get_pos(self, filtered_nodes, layout):
         subgraph = self.G.subgraph(filtered_nodes['node'].tolist())
+        print("node len ", len(filtered_nodes['node']), len(subgraph.nodes()))
         layout_func = self.layout_funcs.get(layout, nx.spring_layout)
         pos = layout_func(subgraph)
         return subgraph, pos
@@ -46,11 +47,15 @@ class NxPlotter:
         edge_x = []
         edge_y = []
 
+        print(len(subgraph.edges()))
         for source, target, _ in subgraph.edges(data=True):
+            if source == target:
+                continue
             x0, y0 = pos[source]
             x1, y1 = pos[target]
             edge_x.extend([x0, x1, None])  # None creates a break in the line for separate edges
             edge_y.extend([y0, y1, None])
+        print(len(edge_x))
 
         edge_trace = go.Scatter(
             x=edge_x, y=edge_y,
